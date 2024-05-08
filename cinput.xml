@@ -1,7 +1,7 @@
 <CollInput>
 
-  <ImpactParam type='linear' bmin='0.5' bmax='0.6' nb='1' />
-  <ImpactVel vx='0.0' vy='0.0' vz='0.2' />
+  <ImpactParam type='linear' bmin='0.5' bmax='20.5' nb='40' />
+  <ImpactVel vx='0.0' vy='0.0' vz='1.0' />
   <Zgrid type='exp' zmin='-100' zmax='100' nzgrid='200' />
 
   <InitState   type='Target' state='1' />

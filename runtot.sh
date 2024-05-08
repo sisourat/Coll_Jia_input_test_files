@@ -8,7 +8,7 @@ TEZFIO=He.ezfio/
 PEZFIO=He.ezfio/
 
 rm -r ints/ tinput_sta/ pinput_sta/
-rm -r coll_input_phis2e_int_2e/
+rm -r cinput_int_2e/
 rm -r He.ezfio
 rm fort.*
 source /home/nico/Workspace/Progs/qp2/quantum_package.rc
