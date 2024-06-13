@@ -1,35 +1,34 @@
 date
-#cd /public/home/du16005/quantumpackage/He2+HeSSP/SSP
-#./det_generateHe.sh
-#cp det_total_he.dat /public/home/du16005/quantumpackage/He2+HeSSP/det_total.dat
-#cd /public/home/du16005/quantumpackage/He2+HeSSP/
 
-TEZFIO=He.ezfio/
-PEZFIO=He.ezfio/
-
+# clean old files
 rm -r ints/ tinput_sta/ pinput_sta/
 rm -r cinput_int_2e/
 rm -r He.ezfio
 rm fort.*
+rm Prop*out
 source /home/nico/Workspace/Progs/qp2/quantum_package.rc
+
+
+# run scf for target and projectile (here same MOs)
 qp create_ezfio -b "test" He.xyz -o He.ezfio
 qp run scf
-qp set cippres_20240414 finput_cippres he.xml
+qp set cippres finput_cippres he.xml
 
+# setup
+TEZFIO=He.ezfio/
+PEZFIO=He.ezfio/
 #qp set electrons elec_alpha_num 1
 #qp set electrons elec_beta_num 0
 
 qp run cippres_gencsf
-qp set cippres_20240414 ifcsf 1
+qp set cippres ifcsf 1
 #qp set cippres ici1 1
 #qp set cippres ici2 1
 qp set cippres n_sta_cistate_analysis 3
 qp run cippres_runci
 
-echo "SETUP COLL"
-qp set cippres_20240414 finput_coll cinput.xml
-qp run cippres_setup_collision
-
+# prepare files for phis2e and coll_jia
+################################################
 cp cistates_det.txt He.ezfio/
 python3.10 from_qp2_to_twoeint_input_t.py $TEZFIO t
 
@@ -57,16 +56,14 @@ mv pmobasis.txt pinput_sta/pmo.txt
 cp pcistates_det.txt ints/
 mv pcistates_det.txt pinput_sta/
 
-#qp set_file He.ezfio
-#qp run cippres_two_e_int
-#mv twoe_int_test.txt ./ints/twoe_int_tttt.txt 
+qp set_file $TEZFIO
+qp run cippres_two_e_int
+mv twoe_int_test.txt ./ints/twoe_int_tttt.txt
 
-#qp set_file He.ezfio
-#qp run cippres_two_e_int
-#mv twoe_int_test.txt ./ints/twoe_int_pppp.txt
+qp set_file $PEZFIO
+qp run cippres_two_e_int
+mv twoe_int_test.txt ./ints/twoe_int_pppp.txt
 
-echo "RUN PHIS2E"
-/home/nico/Workspace/Progs/Coll_Jia/code-2e/phis2e cinput -rep
 qp set_file $TEZFIO
 qp run print_h1emo
 mv h1emo.txt ./ints/h1emo_tt.txt
@@ -74,19 +71,33 @@ qp set_file $PEZFIO
 qp run print_h1emo
 mv h1emo.txt ./ints/h1emo_pp.txt
 
-mv cinput_int_2e/impactb_* ./ints/
-#mv coll_input_phis2e_int_2e/twoe_int* ints
-#cp ints/twoe_int_tttt.txt ints/twoe_int_pppp.txt
-#mv coll_input_phis2e_int_2e/onee_int_pp.txt ints
-#mv coll_input_phis2e_int_2e/twoe_int_tttt.txt ints
-#rm -r coll_input_phis2e_int_2e/
+qp set cippres finput_coll cinput.xml
 
-qp set_file He.ezfio
-qp run cippres_two_e_int
-cp twoe_int_test.txt ./ints/twoe_int_tttt.txt
-cp ints/twoe_int_tttt.txt ints/twoe_int_pppp.txt
+# running the dynamics one b at a time
 
-qp set_file He.ezfio
-qp run cippres_prop_collision_jia
+i=0
+for bproj in 0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5 8.0 8.5 9.0 9.5 10.0
+ do
 
+  let i++
+  sed -e "s/bbb/$bproj/g" cinput.tmp > cinput.xml
+  echo "SETUP COLL", $bproj
+  qp run cippres_setup_collision
+
+  echo "RUN PHIS2E"
+  /home/nico/Workspace/Progs/Coll_Jia/code-2e/phis2e cinput -rep
+
+  mv cinput_int_2e/impactb_* ./ints/
+
+  qp set_file $TEZFIO
+  qp run cippres_prop_collision_jia
+
+  if [ "$i" -eq "1" ]
+   then
+     mv Prop_collision.out Prop_tot.out
+   else
+     tail -n 1  Prop_collision.out >> Prop_tot.out
+   fi
+
+ done
 date
